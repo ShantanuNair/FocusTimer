@@ -2,79 +2,108 @@ import Cocoa
 
 protocol TouchButtonDelegate: AnyObject {
     
-    func touchButtonTap(_ button: TouchButton)
-    func touchButtonDoubleTap(_ button: TouchButton)
-    func touchButtonTapAndHold(_ button: TouchButton)
+    func tapTouchButton(_ button: TouchButton)
+    func doubleTapTouchButton(_ button: TouchButton)
+    func holdTouchButton(_ button: TouchButton)
+    func swipeLeftTouchButton(_ button: TouchButton)
+    func swipeRightTouchButton(_ button: TouchButton)
     
 }
 
 // MARK: -
 
 class TouchButton: NSButton {
-
+    
     // MARK: - Properties
-
+    
     weak var delegate: TouchButtonDelegate?
-
-    private var timer: Timer?
-    private let intervals = (
-        doubleTap: 0.25,
-        tapAndHold: 0.5
-    )
-
-    private var lastTapDate: Date?
-    private var touchBeganTime: TimeInterval = 0
-
-    // MARK: - Actions
-
-    @objc
-    private func tapAndHold(_ object: Any) {
-        delegate?.touchButtonTapAndHold(self)
-    }
-
+    
+    var tapThreshold: TimeInterval = 0.25
+    var holdThreshold: TimeInterval = 0.5
+    var swipeThreshold: CGFloat = 10
+    
+    private var beginningTouchTime: TimeInterval = 0
+    private var beginningTouchPoint: CGPoint = .zero
+    
+    private var endingTouchTime: TimeInterval = 0
+    private var endingTouchPoint: CGPoint = .zero
+    
+    private var holdTimer: Timer?
+    
     // MARK: - Touches
-
+    
     override func touchesBegan(with event: NSEvent) {
-        if event.touches(matching: .began, in: self).first?.type == .direct {
-            touchBeganTime = Date().timeIntervalSince1970
-            timer = Timer.scheduledTimer(
-                timeInterval: intervals.tapAndHold,
-                target: self,
-                selector: #selector(tapAndHold),
-                userInfo: self,
-                repeats: false
-            )
-        }
+        guard let touch = event.touches(matching: .began, in: self).first else { return }
+        
+        dropHoldTimer()
+        
+        beginningTouchTime = Date().timeIntervalSince1970
+        beginningTouchPoint = touch.location(in: self)
+        
+        holdTimer = Timer.scheduledTimer(
+            withTimeInterval: holdThreshold,
+            repeats: false,
+            block: { [weak self] _ in
+                guard let self = self else { return }
+                self.delegate?.holdTouchButton(self)
+                self.dropButton()
+            }
+        )
+        
         super.touchesBegan(with: event)
     }
-
+    
     override func touchesEnded(with event: NSEvent) {
-        for touch in event.touches(matching: .ended, in: self) where touch.type == .direct {
-            if Date().timeIntervalSince1970 - touchBeganTime >= intervals.tapAndHold {
-                // Tap and Hold
-                // delegate will be called by timer
-                break
-            } else if let lastTapDate = lastTapDate,
-                -lastTapDate.timeIntervalSinceNow <= intervals.doubleTap {
-                delegate?.touchButtonDoubleTap(self)
-                self.lastTapDate = nil
+        guard let touch = event.touches(matching: .ended, in: self).first else { return }
+        guard let _ = holdTimer else { return }
+        
+        let lastEndingTouchTime = endingTouchTime
+        
+        endingTouchTime = Date().timeIntervalSince1970
+        endingTouchPoint = touch.location(in: self)
+        
+        if -swipeThreshold...swipeThreshold ~= endingTouchPoint.x - beginningTouchPoint.x {
+            if endingTouchTime - lastEndingTouchTime < tapThreshold {
+                delegate?.doubleTapTouchButton(self)
+                dropButton()
             } else {
-                delegate?.touchButtonTap(self)
-                self.lastTapDate = Date()
+                delegate?.tapTouchButton(self)
+                dropHoldTimer()
             }
+        } else {
+            if endingTouchPoint.x - beginningTouchPoint.x > 0 {
+                delegate?.swipeRightTouchButton(self)
+            } else {
+                delegate?.swipeLeftTouchButton(self)
+            }
+            dropButton()
         }
-
-        timer?.invalidate()
-        timer = nil
-
+        
         super.touchesEnded(with: event)
     }
-
+    
     override func touchesCancelled(with event: NSEvent) {
-        timer?.invalidate()
-        timer = nil
-
+        dropButton()
         super.touchesCancelled(with: event)
     }
-
+    
+    // MARK: - Deinitialization
+    
+    private func dropHoldTimer() {
+        holdTimer?.invalidate()
+        holdTimer = nil
+    }
+    
+    private func dropButton() {
+        beginningTouchTime = 0
+        beginningTouchPoint = .zero
+        endingTouchTime = 0
+        endingTouchPoint = .zero
+        dropHoldTimer()
+    }
+    
+    deinit {
+        dropHoldTimer()
+    }
+    
 }

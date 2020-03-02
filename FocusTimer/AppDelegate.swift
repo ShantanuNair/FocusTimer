@@ -2,7 +2,7 @@ import Cocoa
 
 class AppDelegate: NSObject {
     
-    private var windowController: WindowController?
+    private var windowController: NSWindowController?
     
 }
 
@@ -11,7 +11,7 @@ class AppDelegate: NSObject {
 extension AppDelegate: NSApplicationDelegate {
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        windowController = WindowController(
+        windowController = NSWindowController(
             window: NSWindow(
                 contentViewController: ViewController()
             )

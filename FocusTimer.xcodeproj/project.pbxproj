@@ -9,28 +9,25 @@
 /* Begin PBXBuildFile section */
 		5D5C657622B80F5B0023FA76 /* Icons.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5D5C657522B80F5B0023FA76 /* Icons.xcassets */; };
 		5DCF270722B7EAC300C43150 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DCF270622B7EAC300C43150 /* ViewController.swift */; };
-		5DCF270922B7EC3A00C43150 /* TouchButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DCF270822B7EC3A00C43150 /* TouchButton.swift */; };
+		8A0AD2BB240BBD3300C0C937 /* TouchButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0AD2BA240BBD3300C0C937 /* TouchButton.swift */; };
+		8A0AD2BF240BE87D00C0C937 /* PomodoroTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0AD2BE240BE87D00C0C937 /* PomodoroTimer.swift */; };
 		8A112DDA2099E8AE00DDBDD0 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A112DD92099E8AE00DDBDD0 /* AppDelegate.swift */; };
 		8A112E0A2099FB8000DDBDD0 /* DFRFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8A112E092099FB8000DDBDD0 /* DFRFoundation.framework */; };
-		8A18297823FE52E1001DD016 /* PomodoroTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A18297723FE52E1001DD016 /* PomodoroTimer.swift */; };
 		8A18297E23FE58E8001DD016 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A18297D23FE58E8001DD016 /* main.swift */; };
-		8A33A3C423FE67A300BA97E1 /* WindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A33A3C323FE67A300BA97E1 /* WindowController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		5D5C657522B80F5B0023FA76 /* Icons.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Icons.xcassets; sourceTree = "<group>"; };
 		5DCF270622B7EAC300C43150 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-		5DCF270822B7EC3A00C43150 /* TouchButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchButton.swift; sourceTree = "<group>"; };
+		8A0AD2BA240BBD3300C0C937 /* TouchButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchButton.swift; sourceTree = "<group>"; };
+		8A0AD2BE240BE87D00C0C937 /* PomodoroTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroTimer.swift; sourceTree = "<group>"; };
 		8A112DD62099E8AE00DDBDD0 /* Focus Timer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Focus Timer.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		8A112DD92099E8AE00DDBDD0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		8A112DE22099E8B100DDBDD0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		8A112DE32099E8B100DDBDD0 /* Entitlements.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Entitlements.entitlements; sourceTree = "<group>"; };
 		8A112E052099F8A000DDBDD0 /* TouchBar.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TouchBar.h; sourceTree = "<group>"; };
-		8A112E072099F9D000DDBDD0 /* Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Header.h; sourceTree = "<group>"; };
 		8A112E092099FB8000DDBDD0 /* DFRFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DFRFoundation.framework; path = ../../../../System/Library/PrivateFrameworks/DFRFoundation.framework; sourceTree = "<group>"; };
-		8A18297723FE52E1001DD016 /* PomodoroTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PomodoroTimer.swift; sourceTree = "<group>"; };
 		8A18297D23FE58E8001DD016 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
-		8A33A3C323FE67A300BA97E1 /* WindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,15 +52,6 @@
 			path = System;
 			sourceTree = "<group>";
 		};
-		5DCF270322B7E93C00C43150 /* Bridging */ = {
-			isa = PBXGroup;
-			children = (
-				8A112E072099F9D000DDBDD0 /* Header.h */,
-				8A112E052099F8A000DDBDD0 /* TouchBar.h */,
-			);
-			path = Bridging;
-			sourceTree = "<group>";
-		};
 		8A112DCD2099E8AE00DDBDD0 = {
 			isa = PBXGroup;
 			children = (
@@ -84,14 +72,13 @@
 		8A112DD82099E8AE00DDBDD0 /* FocusTimer */ = {
 			isa = PBXGroup;
 			children = (
-				5DCF270322B7E93C00C43150 /* Bridging */,
 				5DCF270222B7E93600C43150 /* System */,
 				8A18297D23FE58E8001DD016 /* main.swift */,
 				8A112DD92099E8AE00DDBDD0 /* AppDelegate.swift */,
-				8A18297723FE52E1001DD016 /* PomodoroTimer.swift */,
-				5DCF270822B7EC3A00C43150 /* TouchButton.swift */,
+				8A0AD2BE240BE87D00C0C937 /* PomodoroTimer.swift */,
+				8A112E052099F8A000DDBDD0 /* TouchBar.h */,
+				8A0AD2BA240BBD3300C0C937 /* TouchButton.swift */,
 				5DCF270622B7EAC300C43150 /* ViewController.swift */,
-				8A33A3C323FE67A300BA97E1 /* WindowController.swift */,
 			);
 			path = FocusTimer;
 			sourceTree = "<group>";
@@ -181,9 +168,8 @@
 				5DCF270722B7EAC300C43150 /* ViewController.swift in Sources */,
 				8A112DDA2099E8AE00DDBDD0 /* AppDelegate.swift in Sources */,
 				8A18297E23FE58E8001DD016 /* main.swift in Sources */,
-				8A33A3C423FE67A300BA97E1 /* WindowController.swift in Sources */,
-				8A18297823FE52E1001DD016 /* PomodoroTimer.swift in Sources */,
-				5DCF270922B7EC3A00C43150 /* TouchButton.swift in Sources */,
+				8A0AD2BF240BE87D00C0C937 /* PomodoroTimer.swift in Sources */,
+				8A0AD2BB240BBD3300C0C937 /* TouchButton.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -311,6 +297,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 97AQ54T4S5;
 				INFOPLIST_FILE = FocusTimer/System/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -318,10 +305,10 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.14.4;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.topapps.focustimer;
 				PRODUCT_NAME = "Focus Timer";
-				SWIFT_OBJC_BRIDGING_HEADER = FocusTimer/Bridging/Header.h;
+				SWIFT_OBJC_BRIDGING_HEADER = FocusTimer/TouchBar.h;
 				SWIFT_VERSION = 4.0;
 				SYSTEM_FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -338,6 +325,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 97AQ54T4S5;
 				INFOPLIST_FILE = FocusTimer/System/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -345,10 +333,10 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.14.4;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.topapps.focustimer;
 				PRODUCT_NAME = "Focus Timer";
-				SWIFT_OBJC_BRIDGING_HEADER = FocusTimer/Bridging/Header.h;
+				SWIFT_OBJC_BRIDGING_HEADER = FocusTimer/TouchBar.h;
 				SWIFT_VERSION = 4.0;
 				SYSTEM_FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",

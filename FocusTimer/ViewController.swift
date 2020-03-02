@@ -1,15 +1,20 @@
 import Cocoa
 
 extension NSTouchBarItem.Identifier {
-    static let viewControllerTouchBarButton = NSTouchBarItem.Identifier(
-        "com.topapps.focustimer.viewcontroller.bar.button"
+    
+    static let viewControllerButton = NSTouchBarItem.Identifier(
+        "com.topapps.focustimer.viewcontroller.button"
     )
+    
 }
 
-extension NSTouchBar.CustomizationIdentifier {
-    static let viewControllerTouchBar = NSTouchBar.CustomizationIdentifier(
-        "com.topapps.focustimer.viewcontroller.bar"
-    )
+extension NSSound {
+    
+    static func play(named name: String) {
+        // NSSound(named:) returns non-unique instances
+        (NSSound(named: NSSound.Name(name))?.copy() as? NSSound)?.play()
+    }
+    
 }
 
 // MARK: -
@@ -18,39 +23,48 @@ class ViewController: NSViewController {
     
     // MARK: - Properties
     
+    lazy private var button: TouchButton = {
+        guard let icon = NSImage(named: NSImage.Name("TouchBarIcon")) else {
+            preconditionFailure("No icon")
+        }
+        let button = TouchButton(image: icon, target: nil, action: nil)
+        button.delegate = self
+        button.title = ""
+        return button
+    }()
+    
     lazy private var timer: PomodoroTimer = {
         let timer = PomodoroTimer()
         timer.delegate = self
         return timer
     }()
     
-    private var button: TouchButton?
-    
-    // MARK: - LifeCycle
+    // MARK: - Life Cycle
     
     override func loadView() {
         self.view = NSView()
     }
     
     override func viewDidLoad() {
-        if let item = touchBar?.item(
-            forIdentifier: .viewControllerTouchBarButton
-        ) {
-            NSTouchBarItem.addSystemTrayItem(item)
-            DFRElementSetControlStripPresenceForIdentifier(item.identifier, true)
+        if let button = touchBar?.item(forIdentifier: .viewControllerButton) {
+            NSTouchBarItem.addSystemTrayItem(button)
+            DFRElementSetControlStripPresenceForIdentifier(button.identifier, true)
         }
-        
         super.viewDidLoad()
     }
     
-    // MARK: - TouchBar
+    override func viewDidAppear() {
+        guard touchBar != nil else { exit(0) }
+        super.viewDidAppear()
+    }
+    
+    // MARK: - Touch Bar
     
     override func makeTouchBar() -> NSTouchBar? {
         let touchBar = NSTouchBar()
         
+        touchBar.defaultItemIdentifiers = [.viewControllerButton]
         touchBar.delegate = self
-        touchBar.customizationIdentifier = .viewControllerTouchBar
-        touchBar.defaultItemIdentifiers = [.viewControllerTouchBarButton]
         
         return touchBar
     }
@@ -68,44 +82,13 @@ extension ViewController: NSTouchBarDelegate {
         let item = NSCustomTouchBarItem(identifier: identifier)
         
         switch identifier {
-        case .viewControllerTouchBarButton:
-            guard let icon = NSImage(named: NSImage.Name("TouchBarIcon")) else {
-                return nil
-            }
-            
-            let touchButton = TouchButton(image: icon, target: nil, action: nil)
-            touchButton.delegate = self
-            touchButton.title = ""
-            
-            item.view = touchButton
-            button = touchButton
+        case .viewControllerButton:
+            item.view = button
         default:
-            return nil
+            break
         }
         
         return item
-    }
-    
-}
-
-// MARK: - TouchButtonDelegate
-
-extension ViewController: TouchButtonDelegate {
-    
-    func touchButtonTap(_ button: TouchButton) {
-        if timer.start() {
-            NSSound(named: NSSound.Name("Tink"))?.play()
-        }
-    }
-    
-    func touchButtonDoubleTap(_ button: TouchButton) {
-        if timer.reset() {
-            NSSound(named: NSSound.Name("Pop"))?.play()
-        }
-    }
-
-    func touchButtonTapAndHold(_ button: TouchButton) {
-        exit(0)
     }
     
 }
@@ -114,28 +97,50 @@ extension ViewController: TouchButtonDelegate {
 
 extension ViewController: PomodoroTimerDelegate {
     
-    func pomodoroTimer(_ timer: PomodoroTimer, switchedTo newMode: PomodoroTimer.Mode) {
-        switch newMode {
+    func pomodoroTimer(_ timer: PomodoroTimer, switchedTo mode: PomodoroTimer.Mode) {
+        switch mode {
         case .rest:
-            button?.imagePosition = .noImage
-            button?.bezelColor = .systemGreen
+            button.imagePosition = .noImage
+            button.bezelColor = .systemGreen
         case .work:
-            button?.imagePosition = .noImage
-            button?.bezelColor = .systemRed
+            button.imagePosition = .noImage
+            button.bezelColor = .systemRed
         case .idle:
-            button?.imagePosition = .imageOnly
-            button?.bezelColor = .clear
-            button?.title = ""
+            button.imagePosition = .imageOnly
+            button.bezelColor = .clear
+            button.title = ""
         }
     }
     
-    func pomodoroTimer(_ timer: PomodoroTimer, updatedTo timeLeft: TimeInterval) {
-        if timeLeft == 0 {
-            button?.title = "00:00"
-            NSSound(named: NSSound.Name("Pop"))?.play()
-        } else {
-            button?.title = String(format: "%.2i:%.2i", Int(timeLeft) / 60, Int(timeLeft) % 60)
-        }
+    func pomodoroTimer(_ timer: PomodoroTimer, updatedTo time: TimeInterval) {
+        if time == 0 { NSSound.play(named: "Pop") }
+        button.title = String(format: "%.2i:%.2i", Int(time) / 60, Int(time) % 60)
+    }
+    
+}
+
+// MARK: - TouchButtonDelegate
+
+extension ViewController: TouchButtonDelegate {
+    
+    func tapTouchButton(_ button: TouchButton) {
+        timer.toggle { NSSound.play(named: "Tink") }
+    }
+    
+    func doubleTapTouchButton(_ button: TouchButton) {
+        timer.reset { NSSound.play(named: "Pop") }
+    }
+    
+    func holdTouchButton(_ button: TouchButton) {
+        exit(0)
+    }
+    
+    func swipeLeftTouchButton(_ button: TouchButton) {
+        timer.add(-300) { NSSound.play(named: "Morse") }
+    }
+    
+    func swipeRightTouchButton(_ button: TouchButton) {
+        timer.add(300) { NSSound.play(named: "Morse") }
     }
     
 }
