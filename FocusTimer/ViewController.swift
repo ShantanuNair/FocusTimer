@@ -11,7 +11,7 @@ extension NSTouchBarItem.Identifier {
 extension NSSound {
     
     static func play(named name: String) {
-        // NSSound(named:) returns non-unique instances
+        // NSSound(named:) returns non-unique instances for the same names
         (NSSound(named: NSSound.Name(name))?.copy() as? NSSound)?.play()
     }
     
@@ -33,9 +33,25 @@ class ViewController: NSViewController {
         return button
     }()
     
-    lazy private var timer: PomodoroTimer = {
+    lazy private var pomodoroTimer: PomodoroTimer = {
         let timer = PomodoroTimer()
         timer.delegate = self
+        return timer
+    }()
+    
+    // Some user activities (e.g. video watching) can displace the button out of the control strip
+    lazy private var controlStripTimer: DispatchSourceTimer = {
+        let timer = DispatchSource.makeTimerSource(flags: [], queue: DispatchQueue.main)
+        timer.schedule(deadline: .now(), repeating: .seconds(1))
+        timer.setEventHandler { [weak self] in
+            guard
+                let touchBarItem = self?.touchBar?.item(forIdentifier: .viewControllerButton)
+            else {
+                exit(0)
+            }
+            NSTouchBarItem.addSystemTrayItem(touchBarItem)
+            DFRElementSetControlStripPresenceForIdentifier(touchBarItem.identifier, true)
+        }
         return timer
     }()
     
@@ -46,27 +62,24 @@ class ViewController: NSViewController {
     }
     
     override func viewDidLoad() {
-        if let button = touchBar?.item(forIdentifier: .viewControllerButton) {
-            NSTouchBarItem.addSystemTrayItem(button)
-            DFRElementSetControlStripPresenceForIdentifier(button.identifier, true)
-        }
         super.viewDidLoad()
-    }
-    
-    override func viewDidAppear() {
-        guard touchBar != nil else { exit(0) }
-        super.viewDidAppear()
+        controlStripTimer.resume()
     }
     
     // MARK: - Touch Bar
     
     override func makeTouchBar() -> NSTouchBar? {
         let touchBar = NSTouchBar()
-        
         touchBar.defaultItemIdentifiers = [.viewControllerButton]
         touchBar.delegate = self
-        
         return touchBar
+    }
+    
+    // MARK: - Deinitialization
+    
+    deinit {
+        controlStripTimer.setEventHandler(handler: nil)
+        controlStripTimer.cancel()
     }
     
 }
@@ -80,14 +93,12 @@ extension ViewController: NSTouchBarDelegate {
         makeItemForIdentifier identifier: NSTouchBarItem.Identifier
     ) -> NSTouchBarItem? {
         let item = NSCustomTouchBarItem(identifier: identifier)
-        
         switch identifier {
         case .viewControllerButton:
             item.view = button
         default:
             break
         }
-        
         return item
     }
     
@@ -124,11 +135,11 @@ extension ViewController: PomodoroTimerDelegate {
 extension ViewController: TouchButtonDelegate {
     
     func tapTouchButton(_ button: TouchButton) {
-        timer.toggle { NSSound.play(named: "Tink") }
+        pomodoroTimer.toggle { NSSound.play(named: "Tink") }
     }
     
     func doubleTapTouchButton(_ button: TouchButton) {
-        timer.reset { NSSound.play(named: "Pop") }
+        pomodoroTimer.reset { NSSound.play(named: "Pop") }
     }
     
     func holdTouchButton(_ button: TouchButton) {
@@ -136,11 +147,11 @@ extension ViewController: TouchButtonDelegate {
     }
     
     func swipeLeftTouchButton(_ button: TouchButton) {
-        timer.add(-300) { NSSound.play(named: "Morse") }
+        pomodoroTimer.add(-300) { NSSound.play(named: "Morse") }
     }
     
     func swipeRightTouchButton(_ button: TouchButton) {
-        timer.add(300) { NSSound.play(named: "Morse") }
+        pomodoroTimer.add(300) { NSSound.play(named: "Morse") }
     }
     
 }

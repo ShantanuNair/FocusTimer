@@ -30,10 +30,10 @@ class PomodoroTimer: NSObject {
         }
     }
     
-    private var timer: Timer? {
+    private var timer: DispatchSourceTimer? {
         didSet {
-            guard oldValue != timer else { return }
-            oldValue?.invalidate()
+            oldValue?.setEventHandler(handler: nil)
+            oldValue?.cancel()
         }
     }
     
@@ -51,7 +51,7 @@ class PomodoroTimer: NSObject {
         )
     }
     
-    // MARK: - Implementation
+    // MARK: - Public
     
     func toggle(completionHandler: (() -> Void)? = nil) {
         guard timer == nil else { return }
@@ -72,28 +72,30 @@ class PomodoroTimer: NSObject {
         completionHandler?()
     }
     
+    // MARK: - Private
+    
     private func startTimer(until date: Date) {
         expiration = date
-        timer = Timer.scheduledTimer(
-            timeInterval: 0.1,
-            target: self,
-            selector: #selector(updateTimer),
-            userInfo: nil,
-            repeats: true
-        )
-        updateTimer()
+        timer = DispatchSource.makeTimerSource(flags: [], queue: DispatchQueue.main)
+        timer?.schedule(deadline: .now(), repeating: .seconds(1))
+        timer?.setEventHandler { [weak self] in
+            guard let self = self else { return }
+            self.updateTimer()
+        }
+        timer?.resume()
     }
     
     private func stopTimer() {
         expiration = nil
-        timer?.invalidate()
+        timer?.setEventHandler(handler: nil)
+        timer?.cancel()
         timer = nil
     }
     
     @objc
     private func updateTimer() {
         guard let _ = timer, let expiration = expiration else { return }
-        let timeLeft = max(0, expiration.timeIntervalSinceNow).rounded(.down)
+        let timeLeft = max(0, expiration.timeIntervalSinceNow).rounded()
         delegate?.pomodoroTimer(self, updatedTo: timeLeft)
         if timeLeft == 0 { stopTimer() }
     }
