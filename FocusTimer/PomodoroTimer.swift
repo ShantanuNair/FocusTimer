@@ -1,110 +1,103 @@
 import Foundation
 
 protocol PomodoroTimerDelegate: AnyObject {
-    
     func pomodoroTimer(_ timer: PomodoroTimer, switchedTo mode: PomodoroTimer.Mode)
-    func pomodoroTimer(_ timer: PomodoroTimer, updatedTo timeLeft: TimeInterval)
-    
+    func pomodoroTimer(_ timer: PomodoroTimer, updatedTo seconds: Int)
 }
 
-// MARK: -
-
 class PomodoroTimer: NSObject {
-    
-    // MARK: - Subtypes
-    
     enum Mode: TimeInterval {
         case work = 1500
         case rest = 300
         case idle = 0
     }
-    
-    // MARK: - Properties
-    
+
     weak var delegate: PomodoroTimerDelegate?
-    
+
     private var mode: Mode = .idle {
         didSet {
             guard oldValue != mode else { return }
+
+            isTimerOn = mode != .idle
+            timeLeft = mode.rawValue
+
             delegate?.pomodoroTimer(self, switchedTo: mode)
         }
     }
-    
-    private var timer: DispatchSourceTimer? {
+
+    private lazy var timer: DispatchSourceTimer = {
+        let timer = DispatchSource.makeTimerSource(flags: .strict, queue: .main)
+        timer.schedule(deadline: .now(), repeating: .seconds(1))
+        timer.setEventHandler { [weak self] in
+            guard let self = self else { return }
+            self.updateTimeState()
+        }
+        return timer
+    }()
+
+    private var isTimerOn = false {
         didSet {
-            oldValue?.setEventHandler(handler: nil)
-            oldValue?.cancel()
+            guard oldValue != isTimerOn else { return }
+            if isTimerOn { timer.resume() } else { timer.suspend() }
         }
     }
-    
-    private var expiration: Date?
-    
-    // MARK: - Initialization
-    
+
+    private var lastDate = Date(timeIntervalSince1970: 0) {
+        didSet {
+            updateTimeState()
+        }
+    }
+
+    private var timeLeft: TimeInterval {
+        get {
+            max(0, lastDate.timeIntervalSinceNow).rounded()
+        }
+        set {
+            lastDate = max(Date(), Date().addingTimeInterval(newValue))
+        }
+    }
+
     override init() {
         super.init()
         NSWorkspace.shared.notificationCenter.addObserver(
             self,
-            selector: #selector(updateTimer),
+            selector: #selector(updateTimeState),
             name: NSWorkspace.didWakeNotification,
             object: nil
         )
     }
-    
-    // MARK: - Public
-    
-    func toggle(completionHandler: (() -> Void)? = nil) {
-        guard timer == nil else { return }
-        mode = (mode != .work) ? .work : .rest
-        startTimer(until: Date().addingTimeInterval(mode.rawValue))
-        completionHandler?()
-    }
-    
-    func reset(completionHandler: (() -> Void)? = nil) {
-        mode = .idle
-        stopTimer()
-        completionHandler?()
-    }
-    
-    func add(_ time: TimeInterval, completionHandler: (() -> Void)? = nil) {
-        guard mode != .idle else { return }
-        startTimer(until: max(Date(), expiration ?? Date()).addingTimeInterval(time))
-        completionHandler?()
-    }
-    
-    // MARK: - Private
-    
-    private func startTimer(until date: Date) {
-        expiration = date
-        timer = DispatchSource.makeTimerSource(flags: [], queue: DispatchQueue.main)
-        timer?.schedule(deadline: .now(), repeating: .seconds(1))
-        timer?.setEventHandler { [weak self] in
-            guard let self = self else { return }
-            self.updateTimer()
-        }
-        timer?.resume()
-    }
-    
-    private func stopTimer() {
-        expiration = nil
-        timer?.setEventHandler(handler: nil)
-        timer?.cancel()
-        timer = nil
-    }
-    
-    @objc
-    private func updateTimer() {
-        guard let _ = timer, let expiration = expiration else { return }
-        let timeLeft = max(0, expiration.timeIntervalSinceNow).rounded()
-        delegate?.pomodoroTimer(self, updatedTo: timeLeft)
-        if timeLeft == 0 { stopTimer() }
-    }
-    
-    // MARK: - Deinitialization
-    
+
     deinit {
         NSWorkspace.shared.notificationCenter.removeObserver(self)
-        stopTimer()
+        timer.setEventHandler { }
+        timer.cancel()
     }
-    
+}
+
+extension PomodoroTimer {
+    @objc
+    private func updateTimeState() {
+        guard mode != .idle else { return }
+        isTimerOn = timeLeft != 0
+        delegate?.pomodoroTimer(self, updatedTo: Int(timeLeft))
+    }
+}
+
+extension PomodoroTimer {
+    func toggle(completionHandler: (() -> Void)? = nil) {
+        guard !isTimerOn else { return }
+        mode = mode != .work ? .work : .rest
+        completionHandler?()
+    }
+
+    func reset(completionHandler: (() -> Void)? = nil) {
+        mode = .idle
+        completionHandler?()
+    }
+
+    func add(_ time: TimeInterval, completionHandler: (() -> Void)? = nil) {
+        guard mode != .idle else { return }
+        timeLeft += time
+        completionHandler?()
+    }
 }
