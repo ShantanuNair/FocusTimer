@@ -1,3 +1,4 @@
+import AVFoundation
 import Cocoa
 
 class ViewController: NSViewController {
@@ -117,13 +118,19 @@ extension ViewController: TouchButtonDelegate {
 
 extension NSSound {
     static func play(named name: String) {
-        // NSSound(named:) returns non-unique instances for the same names
-        (NSSound(named: NSSound.Name(name))?.copy() as? NSSound)?.play()
+        guard
+            let path = Bundle.main.path(
+                forResource: "\(name)", ofType: "aiff", inDirectory: "Sounds"
+            ),
+            let sound = NSSound(contentsOfFile: path, byReference: true)
+        else { return }
+
+        sound.play()
     }
 }
 
 extension NSTouchBarItem.Identifier {
     static let viewControllerButton = NSTouchBarItem.Identifier(
-        "com.topapps.focustimer.viewcontroller.button"
+        "com.aloshev.focustimer.viewcontroller.button"
     )
 }
