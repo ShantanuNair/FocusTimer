@@ -10,4 +10,4 @@ Simple [pomodoro](https://en.wikipedia.org/wiki/Pomodoro_Technique) timer for th
 - **Hold** to close
 - **Swipe** to change time
 
-[Download](https://github.com/kaifelin/FocusTimer/releases/latest/download/FocusTimer.zip)
+[Download](https://github.com/aloshev/FocusTimer/releases/latest/download/FocusTimer.zip)
