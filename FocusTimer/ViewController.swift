@@ -1,14 +1,16 @@
-import AVFoundation
 import Cocoa
+import UserNotifications
 
 class ViewController: NSViewController {
-    private lazy var pomodoroTouchButton: TouchButton = {
-        guard let icon = NSImage(named: NSImage.Name("TouchBarIcon")) else {
-            preconditionFailure("No icon")
-        }
-        let button = TouchButton(image: icon, target: nil, action: nil)
-        button.delegate = self
+    private lazy var pomodoroButton: TouchButton = {
+        let button = TouchButton(
+            image: NSImage(named: NSImage.Name("TouchBarIcon"))!,
+            target: nil,
+            action: nil
+        )
         button.title = ""
+        button.font = NSFont.monospacedDigitSystemFont(ofSize: 15, weight: .medium)
+        button.delegate = self
         return button
     }()
 
@@ -21,7 +23,8 @@ class ViewController: NSViewController {
     // Some user activities (e.g. video watching) can displace the button out of the control strip
     private lazy var controlStripTimer: DispatchSourceTimer = {
         let timer = DispatchSource.makeTimerSource(flags: .strict, queue: DispatchQueue.main)
-        timer.schedule(deadline: .now(), repeating: .seconds(1))
+
+        timer.schedule(deadline: .now(), repeating: .seconds(1), leeway: .milliseconds(100))
         timer.setEventHandler { [weak self] in
             guard
                 let touchBarItem = self?.touchBar?.item(forIdentifier: .viewControllerButton)
@@ -31,8 +34,18 @@ class ViewController: NSViewController {
             NSTouchBarItem.addSystemTrayItem(touchBarItem)
             DFRElementSetControlStripPresenceForIdentifier(touchBarItem.identifier, true)
         }
+
         return timer
     }()
+
+    private let formatter: DateComponentsFormatter = {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.minute, .second]
+        formatter.zeroFormattingBehavior = .pad
+        return formatter
+    }()
+
+    private let notifier = UserNotifier()
 
     override func loadView() {
         self.view = NSView()
@@ -40,6 +53,20 @@ class ViewController: NSViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(willSleep),
+            name: NSWorkspace.willSleepNotification,
+            object: nil
+        )
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(didWake),
+            name: NSWorkspace.didWakeNotification,
+            object: nil
+        )
+
         controlStripTimer.resume()
     }
 
@@ -51,8 +78,21 @@ class ViewController: NSViewController {
     }
 
     deinit {
-        controlStripTimer.setEventHandler(handler: nil)
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
+        controlStripTimer.setEventHandler { }
         controlStripTimer.cancel()
+    }
+}
+
+extension ViewController {
+    @objc
+    private func willSleep() {
+        controlStripTimer.suspend()
+    }
+
+    @objc
+    private func didWake() {
+        controlStripTimer.resume()
     }
 }
 
@@ -64,7 +104,7 @@ extension ViewController: NSTouchBarDelegate {
         let item = NSCustomTouchBarItem(identifier: identifier)
         switch identifier {
         case .viewControllerButton:
-            item.view = pomodoroTouchButton
+            item.view = pomodoroButton
         default:
             break
         }
@@ -73,34 +113,38 @@ extension ViewController: NSTouchBarDelegate {
 }
 
 extension ViewController: PomodoroTimerDelegate {
-    func pomodoroTimer(_ timer: PomodoroTimer, switchedTo mode: PomodoroTimer.Mode) {
+    func timer(_ timer: PomodoroTimer, start mode: PomodoroTimer.Mode) {
         switch mode {
-        case .rest:
-            pomodoroTouchButton.imagePosition = .noImage
-            pomodoroTouchButton.bezelColor = .systemGreen
-        case .work:
-            pomodoroTouchButton.imagePosition = .noImage
-            pomodoroTouchButton.bezelColor = .systemRed
+        case .free:
+            pomodoroButton.imagePosition = .noImage
+            pomodoroButton.bezelColor = .systemGreen
+        case .busy:
+            pomodoroButton.imagePosition = .noImage
+            pomodoroButton.bezelColor = .systemRed
         case .idle:
-            pomodoroTouchButton.imagePosition = .imageOnly
-            pomodoroTouchButton.bezelColor = .clear
-            pomodoroTouchButton.title = ""
+            pomodoroButton.imagePosition = .imageOnly
+            pomodoroButton.bezelColor = .clear
+            pomodoroButton.title = ""
         }
     }
 
-    func pomodoroTimer(_ timer: PomodoroTimer, updatedTo seconds: Int) {
-        if seconds == 0 { NSSound.play(named: "Pop") }
-        pomodoroTouchButton.title = String(format: "%.2i:%.2i", seconds / 60, seconds % 60)
+    func timer(_ timer: PomodoroTimer, tick seconds: TimeInterval) {
+        pomodoroButton.title = (formatter.string(from: seconds) ?? "")
+    }
+
+    func timer(_ timer: PomodoroTimer, end mode: PomodoroTimer.Mode) {
+        pomodoroButton.title = "00:00"
+        notifier.handle(event: .stop(mode))
     }
 }
 
 extension ViewController: TouchButtonDelegate {
     func tapTouchButton(_ button: TouchButton) {
-        pomodoroTimer.toggle { NSSound.play(named: "Tink") }
+        pomodoroTimer.toggle() { [weak self] in self?.notifier.handle(event: .start) }
     }
 
     func doubleTapTouchButton(_ button: TouchButton) {
-        pomodoroTimer.reset { NSSound.play(named: "Pop") }
+        pomodoroTimer.drop() { [weak self] in self?.notifier.handle(event: .drop) }
     }
 
     func holdTouchButton(_ button: TouchButton) {
@@ -108,29 +152,16 @@ extension ViewController: TouchButtonDelegate {
     }
 
     func swipeLeftTouchButton(_ button: TouchButton) {
-        pomodoroTimer.add(-300) { NSSound.play(named: "Morse") }
+        pomodoroTimer.add(seconds: -300) { [weak self] in self?.notifier.handle(event: .swipe) }
     }
 
     func swipeRightTouchButton(_ button: TouchButton) {
-        pomodoroTimer.add(300) { NSSound.play(named: "Morse") }
-    }
-}
-
-extension NSSound {
-    static func play(named name: String) {
-        guard
-            let path = Bundle.main.path(
-                forResource: "\(name)", ofType: "aiff", inDirectory: "Sounds"
-            ),
-            let sound = NSSound(contentsOfFile: path, byReference: true)
-        else { return }
-
-        sound.play()
+        pomodoroTimer.add(seconds: 300) { [weak self] in self?.notifier.handle(event: .swipe) }
     }
 }
 
 extension NSTouchBarItem.Identifier {
     static let viewControllerButton = NSTouchBarItem.Identifier(
-        "com.aloshev.focustimer.viewcontroller.button"
+        "com.aloshev.focustimer.touchButton"
     )
 }

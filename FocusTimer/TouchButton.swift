@@ -15,29 +15,31 @@ class TouchButton: NSButton {
     var holdThreshold: TimeInterval = 0.5
     var swipeThreshold: CGFloat = 10
 
-    private var touchPoint: CGPoint = .zero
-    private var touchTime: TimeInterval = 0
-
-    private lazy var holdTimer: DispatchSourceTimer = {
+    private lazy var timer: DispatchSourceTimer = {
         let timer = DispatchSource.makeTimerSource(queue: .main)
+
         timer.setEventHandler { [weak self] in
             guard let self = self else { return }
             self.delegate?.holdTouchButton(self)
-            self.resetButtonState()
+            self.resetButton()
         }
+
         return timer
     }()
 
-    private var isHoldTimerOn = false {
+    private var isTimerRunning = false {
         didSet {
-            guard oldValue != isHoldTimerOn else { return }
-            if isHoldTimerOn { holdTimer.resume() } else { holdTimer.suspend() }
+            guard oldValue != isTimerRunning else { return }
+            isTimerRunning ? timer.resume() : timer.suspend()
         }
     }
 
+    private var touchPoint: CGPoint = .zero
+    private var touchTime: TimeInterval = 0
+
     deinit {
-        holdTimer.setEventHandler { }
-        holdTimer.cancel()
+        timer.setEventHandler { }
+        timer.cancel()
     }
 }
 
@@ -46,7 +48,7 @@ extension TouchButton {
         guard let touch = event.touches(matching: .began, in: self).first else { return }
 
         touchPoint = touch.location(in: self)
-        restartHoldTimer()
+        resetTimer()
 
         super.touchesBegan(with: event)
     }
@@ -54,7 +56,7 @@ extension TouchButton {
     override func touchesEnded(with event: NSEvent) {
         guard let touch = event.touches(matching: .ended, in: self).first else { return }
 
-        isHoldTimerOn = false
+        isTimerRunning = false
 
         let prevTouchTime = touchTime
         let prevTouchPoint = touchPoint
@@ -68,13 +70,13 @@ extension TouchButton {
         switch (distance, period) {
         case (...(-swipeThreshold), _):
             delegate?.swipeLeftTouchButton(self)
-            resetButtonState()
+            resetButton()
         case (swipeThreshold..., _):
             delegate?.swipeRightTouchButton(self)
-            resetButtonState()
+            resetButton()
         case (_, ...tapThreshold):
             delegate?.doubleTapTouchButton(self)
-            resetButtonState()
+            resetButton()
         case (_, tapThreshold...):
             delegate?.tapTouchButton(self)
         default:
@@ -85,21 +87,21 @@ extension TouchButton {
     }
 
     override func touchesCancelled(with event: NSEvent) {
-        resetButtonState()
+        resetButton()
         super.touchesCancelled(with: event)
     }
 }
 
 extension TouchButton {
-    private func restartHoldTimer() {
-        isHoldTimerOn = false
-        holdTimer.schedule(deadline: .now() + holdThreshold)
-        isHoldTimerOn = true
+    private func resetTimer() {
+        isTimerRunning = false
+        timer.schedule(deadline: .now() + holdThreshold)
+        isTimerRunning = true
     }
 
-    private func resetButtonState() {
+    private func resetButton() {
         touchPoint = .zero
         touchTime = 0
-        isHoldTimerOn = false
+        isTimerRunning = false
     }
 }
