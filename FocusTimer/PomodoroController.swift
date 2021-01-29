@@ -1,7 +1,7 @@
 import Cocoa
 import UserNotifications
 
-class ViewController: NSViewController {
+class PomodoroController: NSViewController {
     private lazy var pomodoroButton: TouchButton = {
         let button = TouchButton(
             image: NSImage(named: NSImage.Name("TouchBarIcon"))!,
@@ -27,7 +27,7 @@ class ViewController: NSViewController {
         timer.schedule(deadline: .now(), repeating: .seconds(1), leeway: .milliseconds(100))
         timer.setEventHandler { [weak self] in
             guard
-                let touchBarItem = self?.touchBar?.item(forIdentifier: .viewControllerButton)
+                let touchBarItem = self?.touchBar?.item(forIdentifier: .pomodoroButton)
             else {
                 exit(0)
             }
@@ -45,7 +45,7 @@ class ViewController: NSViewController {
         return formatter
     }()
 
-    private let notifier = UserNotifier()
+    private let notifier = FeedbackNotifier()
 
     override func loadView() {
         self.view = NSView()
@@ -72,7 +72,7 @@ class ViewController: NSViewController {
 
     override func makeTouchBar() -> NSTouchBar? {
         let touchBar = NSTouchBar()
-        touchBar.defaultItemIdentifiers = [.viewControllerButton]
+        touchBar.defaultItemIdentifiers = [.pomodoroButton]
         touchBar.delegate = self
         return touchBar
     }
@@ -84,7 +84,7 @@ class ViewController: NSViewController {
     }
 }
 
-extension ViewController {
+extension PomodoroController {
     @objc
     private func willSleep() {
         controlStripTimer.suspend()
@@ -96,14 +96,14 @@ extension ViewController {
     }
 }
 
-extension ViewController: NSTouchBarDelegate {
+extension PomodoroController: NSTouchBarDelegate {
     func touchBar(
         _ touchBar: NSTouchBar,
         makeItemForIdentifier identifier: NSTouchBarItem.Identifier
     ) -> NSTouchBarItem? {
         let item = NSCustomTouchBarItem(identifier: identifier)
         switch identifier {
-        case .viewControllerButton:
+        case .pomodoroButton:
             item.view = pomodoroButton
         default:
             break
@@ -112,7 +112,7 @@ extension ViewController: NSTouchBarDelegate {
     }
 }
 
-extension ViewController: PomodoroTimerDelegate {
+extension PomodoroController: PomodoroTimerDelegate {
     func timer(_ timer: PomodoroTimer, start mode: PomodoroTimer.Mode) {
         switch mode {
         case .free:
@@ -138,7 +138,7 @@ extension ViewController: PomodoroTimerDelegate {
     }
 }
 
-extension ViewController: TouchButtonDelegate {
+extension PomodoroController: TouchButtonDelegate {
     func tapTouchButton(_ button: TouchButton) {
         pomodoroTimer.toggle() { [weak self] in self?.notifier.handle(event: .start) }
     }
@@ -161,7 +161,7 @@ extension ViewController: TouchButtonDelegate {
 }
 
 extension NSTouchBarItem.Identifier {
-    static let viewControllerButton = NSTouchBarItem.Identifier(
-        "com.aloshev.focustimer.touchButton"
+    static let pomodoroButton = NSTouchBarItem.Identifier(
+        "com.aloshev.focustimer.pomodoroButton"
     )
 }

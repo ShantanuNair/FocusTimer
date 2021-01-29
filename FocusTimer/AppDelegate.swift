@@ -8,9 +8,9 @@ extension AppDelegate: NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         windowController = NSWindowController(
             window: NSWindow(
-                contentViewController: ViewController()
+                contentViewController: PomodoroController()
             )
         )
-        windowController?.showWindow(self)
+        windowController?.loadWindow()
     }
 }

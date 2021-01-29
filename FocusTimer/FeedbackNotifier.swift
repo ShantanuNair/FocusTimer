@@ -1,7 +1,7 @@
 import Foundation
 import  UserNotifications
 
-class UserNotifier {
+class FeedbackNotifier {
     enum Event {
         case start
         case swipe
@@ -22,7 +22,7 @@ class UserNotifier {
     }
 }
 
-extension UserNotifier {
+extension FeedbackNotifier {
     func handle(event: Event) {
         UNUserNotificationCenter.current().getNotificationSettings { settings in
             self.isEnabled = (settings.authorizationStatus == .authorized)
